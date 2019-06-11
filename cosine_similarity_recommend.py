@@ -167,24 +167,34 @@ class CosineSimilarityRecommend(object):
         return self.users_combinations_df
 
     def count_seen_same_movies(self, users_combinations_df, movies_seen_users_set_dict):
+        """
+        计算两两用户看过相同电影的数量
+        :param users_combinations_df: 
+        :param movies_seen_users_set_dict: 
+        :return: 
+        """
         seen_same_movies_id_list = []
         seen_same_movies_number_list = []
         for _row in users_combinations_df.itertuples():  # 迭代出每个用户组合
             # users_combinations_set = set(_row[1:])  # 每行的第一个为 index,所以用[1:]去掉
             seen_same_movie_set = set()
-            for _key, _value in movies_seen_users_set_dict.items():
+            for _key, _value in movies_seen_users_set_dict.items():  # 迭代出每一部电影，检查两人看过哪些相同的电影
                 if set(_row[1:]).issubset(_value):  # 两人看过相同的电影，该电影的id为_key
                     seen_same_movie_set.add(_key)
-            if seen_same_movie_set:
-                seen_same_movies_id = str(seen_same_movie_set)[1:-1]  # [1:-1]去掉set的前后花括号{}
-            else:
-                seen_same_movies_id = ''
-            seen_same_movies_number = len(seen_same_movie_set)
+            # if seen_same_movie_set:
+            #     seen_same_movies_id = str(seen_same_movie_set)[1:-1]  # [1:-1]去掉set的前后花括号{}
+            # else:
+            #     seen_same_movies_id = ''
+            seen_same_movie_list = list(seen_same_movie_set)
+            seen_same_movie_list.sort()  # list 排序
+            seen_same_movies_id = str(seen_same_movie_list).replace('[', '').replace(']', '')  # str
+            seen_same_movies_number = len(seen_same_movie_set)  # int
+
             seen_same_movies_id_list.append(seen_same_movies_id)
             seen_same_movies_number_list.append(seen_same_movies_number)
             print(seen_same_movies_number, seen_same_movies_id)
         two_users_seen_same_movies_df = users_combinations_df
-        two_users_seen_same_movies_df.insert(loc=0, column='seen_same_movies_id', value=seen_same_movies_id_list)
+        two_users_seen_same_movies_df.insert(loc=0, column='seen_same_movies_id', value=seen_same_movies_id_list)  # DataFrame 列拼接
         two_users_seen_same_movies_df.insert(loc=0, column='seen_same_movies_number', value=seen_same_movies_number_list)
         self.users_combinations_df = two_users_seen_same_movies_df
         return self.users_combinations_df
