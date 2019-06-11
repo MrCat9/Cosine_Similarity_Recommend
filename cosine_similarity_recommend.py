@@ -29,8 +29,8 @@ class CosineSimilarityRecommend(object):
         self.movies_seen_users_set_dict = ''  # 每部电影的用户集合的字典
         '''
         {
-            movie_id_0: {user_id_0, user_id_1},  # key_type:int  value_type:int
-            movie_id_1: {user_id_0, user_id_4},
+            movie_id_0: {user_id_0, user_id_1},  # key_type:int
+            movie_id_1: {user_id_0, user_id_4},  # value_type:set    {int, int, int}
         }
        '''
 
@@ -39,9 +39,9 @@ class CosineSimilarityRecommend(object):
         self.recommend_result_dict = ''  # 推荐结果
         '''
         {
-            "user_id_0": "movie_id_0, movie_id_2",
-            "user_id_1": "movie_id_1",
-            "user_id_2": "movie_id_0, movie_id_1, movie_id_2"
+            user_id_0: "movie_id_0, movie_id_2",  # key_type:int  value_type:str
+            user_id_1: "movie_id_1",
+            user_id_2: "movie_id_0, movie_id_1, movie_id_2"
         }
         '''
 
@@ -56,9 +56,9 @@ class CosineSimilarityRecommend(object):
         new_dict_data = {}
         for _key, _value in dict_data.items():  # 把 dict 中的 value 都转成 str
             if _value:
-                new_dict_data[_key] = str(_value)[1:-1]  # [1:-1]去掉set的前后花括号{}
+                new_dict_data[str(_key)] = str(_value)[1:-1]  # [1:-1]去掉set的前后花括号{}
             else:
-                new_dict_data[_key] = ''
+                new_dict_data[str(_key)] = ''
         return new_dict_data
 
     # def recommend_for_users(self, user1_id, user2_id):
@@ -74,7 +74,22 @@ class CosineSimilarityRecommend(object):
         return self.need_recommend_users_seen_movies_set_dict
 
     def generate_recommend_result_dict(self, need_recommend_df, df, user_id_item, movie_id_item, rating_item, min_recommend_rating):
-        users_set = set()
+        """
+        生成推荐结果 dict
+        {
+            user_id_0: "movie_id_0, movie_id_2",  # key_type:int  value_type:str
+            user_id_1: "movie_id_1",
+            user_id_2: "movie_id_0, movie_id_1, movie_id_2"
+        }
+        :param need_recommend_df: 
+        :param df: 
+        :param user_id_item: 
+        :param movie_id_item: 
+        :param rating_item: 
+        :param min_recommend_rating: 
+        :return: 
+        """
+        users_set = set()  # 需要推荐的用户集合
         users_df = need_recommend_df.loc[:, ['user1', 'user2']].applymap(lambda x: users_set.add(x))
         need_recommend_users_seen_movies_set_dict = self.generate_users_seen_movies_set_dict(users_set, df, user_id_item, movie_id_item)
 
@@ -116,15 +131,31 @@ class CosineSimilarityRecommend(object):
         return self.recommend_result_dict
 
     def filter_need_recommend_df(self, users_cosine_similarity_df, min_cosine_similarity):
-        need_recommend_df = users_cosine_similarity_df[users_cosine_similarity_df['cosine_similarity'] >= min_cosine_similarity]
+        """
+        过滤出需要推荐的 DataFrame
+        根据两个用户之间的余弦相似度进行过滤
+        过滤余弦相似度小于 min_cosine_similarity 的用户组合
+        :param users_cosine_similarity_df:
+        :param min_cosine_similarity:
+        :return:
+        """
+        # need_recommend_df = users_cosine_similarity_df[users_cosine_similarity_df['cosine_similarity'] >= min_cosine_similarity]
+        need_recommend_df = users_cosine_similarity_df.loc[users_cosine_similarity_df.loc[:, 'cosine_similarity'] >= min_cosine_similarity]
         self.users_combinations_df = need_recommend_df
         return self.users_combinations_df
 
     @staticmethod
     def calculate_vectors_cosine_similarity(vector1, vector2):
+        """
+        计算两个向量的夹角余弦
+        :param vector1: 列向量
+        :param vector2: 列向量
+        :return:
+        """
         v1 = np.array(vector1).reshape(1, -1)
         v2 = np.array(vector2).reshape(1, -1)
         cos_sim = cosine_similarity(X=v1, Y=v2)
+        # 两个向量计算余弦相似度时，计算结果是一个 1*1矩阵
         if cos_sim.size == 1:
             cos_sim = cos_sim[0, 0]
         else:
@@ -133,48 +164,69 @@ class CosineSimilarityRecommend(object):
 
     @staticmethod
     def vectors_dimensionality_reduction(vector1, vector2):
-        new_v1_list = []
+        """
+        对传入的两个向量进行降维，返回两个降维后的新向量
+        :param vector1:
+        :param vector2:
+        :return:
+        """
+        new_v1_list = []  # 新向量1
         new_v2_list = []
-        number = vector1.size
+        number = vector1.size  # 大小，看要迭代几次
         for i in range(number):
             vector1_i = vector1[i]
             vector2_i = vector2[i]
-            if vector1_i != 0.0 or vector2_i != 0.0:
+            if vector1_i != 0.0 or vector2_i != 0.0:  # 两向量对应位置不同时为0时，保留该项
                 new_v1_list.append(vector1_i)
                 new_v2_list.append(vector2_i)
-        new_v1 = np.array(new_v1_list)
+        new_v1 = np.array(new_v1_list)  # 生成新向量1
         new_v2 = np.array(new_v2_list)
         return new_v1, new_v2
 
     def calculate_users_cosine_similarity(self, need_calculate_df, users_movies_ndarray):
-        cos_sim_list = []
+        """
+        计算用户相似度
+        :param need_calculate_df:
+        :param users_movies_ndarray:
+        :return:
+        """
+        cos_sim_list = []  # 两两用户的相似度  # [0.6044, 0.6212, 0.6003]
         for _row in need_calculate_df.itertuples():
             user1_index = getattr(_row, 'user1') - 1  # 要 -1 ，因为矩阵的索引是从0开始的
             user2_index = getattr(_row, 'user2') - 1  # 要 -1 ，因为矩阵的索引是从0开始的
-            user1_vector = users_movies_ndarray[user1_index]  # 取行
-            user2_vector = users_movies_ndarray[user2_index]
-            user1_vector, user2_vector = self.vectors_dimensionality_reduction(user1_vector, user2_vector)
-            cos_sim = self.calculate_vectors_cosine_similarity(user1_vector, user2_vector)  # 传入列向量
-            cos_sim_list.append(cos_sim)
+            user1_vector = users_movies_ndarray[user1_index]  # 取行  # 用户向量
+            user2_vector = users_movies_ndarray[user2_index]  # shape: (50006,)  # 50006 为电影数量
+            user1_vector, user2_vector = self.vectors_dimensionality_reduction(user1_vector, user2_vector)  # 对向量降维
+            cos_sim = self.calculate_vectors_cosine_similarity(user1_vector, user2_vector)  # 传入列向量  # 计算两个向量的夹角余弦
+            cos_sim_list.append(cos_sim)  # 将该对用户的余弦相似度保存到list里
         users_cosine_similarity_df = need_calculate_df
-        users_cosine_similarity_df.insert(loc=0, column='cosine_similarity', value=cos_sim_list)
+        users_cosine_similarity_df.insert(loc=0, column='cosine_similarity', value=cos_sim_list)  # DataFrame 拼接
         self.users_combinations_df = users_cosine_similarity_df
         return self.users_combinations_df
 
     def filter_need_calculate_df(self, two_users_seen_same_movies_df, min_seen_same_movies_number):
-        need_calculate_df = two_users_seen_same_movies_df[two_users_seen_same_movies_df['seen_same_movies_number'] >= min_seen_same_movies_number]
+        """
+        过滤出需要计算相似度的 DataFrame
+        根据两个用户看过的相同电影的数量进行过滤
+        过滤相同电影数量小于 min_seen_same_movies_number 的用户组合
+        :param two_users_seen_same_movies_df:
+        :param min_seen_same_movies_number:
+        :return:
+        """
+        # need_calculate_df = two_users_seen_same_movies_df[two_users_seen_same_movies_df['seen_same_movies_number'] >= min_seen_same_movies_number]
+        need_calculate_df = two_users_seen_same_movies_df.loc[two_users_seen_same_movies_df.loc[:, 'seen_same_movies_number'] >= min_seen_same_movies_number]
         self.users_combinations_df = need_calculate_df
         return self.users_combinations_df
 
     def count_seen_same_movies(self, users_combinations_df, movies_seen_users_set_dict):
         """
         计算两两用户看过相同电影的数量
-        :param users_combinations_df: 
-        :param movies_seen_users_set_dict: 
-        :return: 
+        :param users_combinations_df:
+        :param movies_seen_users_set_dict:
+        :return:
         """
-        seen_same_movies_id_list = []
-        seen_same_movies_number_list = []
+        seen_same_movies_id_list = []  # 两两用户看过的相同电影的id  # ['1, 2', '', '1, 3, 4']
+        seen_same_movies_number_list = []  # 两两用户看过的相同电影的数量  # [2, 0, 3]
         for _row in users_combinations_df.itertuples():  # 迭代出每个用户组合
             # users_combinations_set = set(_row[1:])  # 每行的第一个为 index,所以用[1:]去掉
             seen_same_movie_set = set()
@@ -203,8 +255,8 @@ class CosineSimilarityRecommend(object):
         """
         生成每部电影的用户集合的字典
         {
-            movie_id_0: {user_id_0, user_id_1},  # key_type:int  value_type:int
-            movie_id_1: {user_id_0, user_id_4},
+            movie_id_0: {user_id_0, user_id_1},  # key_type:int
+            movie_id_1: {user_id_0, user_id_4},  # value_type:set    {int, int, int}
         }
         :param movies_set:
         :param df:
@@ -259,37 +311,47 @@ class CosineSimilarityRecommend(object):
         return self.df
 
     def main(self):
-        df = self.read_csv_to_df(self.csv_path)  # 读 csv
-        users_set, movies_set, users_movies_ndarray = self.generate_users_movies_ndarray(self.df, self.user_id_item, self.movie_id_item, self.rating_item)  # 生成 用户_电影 矩阵
+        # 读 csv
+        df = self.read_csv_to_df(self.csv_path)
+        # 生成 用户_电影 矩阵
+        users_set, movies_set, users_movies_ndarray = self.generate_users_movies_ndarray(self.df, self.user_id_item, self.movie_id_item, self.rating_item)
+        # 生成所有用户的两两组合的 DataFrame
         users_combinations_df = self.generate_users_combinations_df(self.users_set)
+        # 生成每部电影的用户集合的字典
         movies_seen_users_set_dict = self.generate_movies_seen_users_set_dict(self.movies_set, self.df, self.user_id_item, self.movie_id_item)
+        # 计算两两用户看过相同电影的数量
         two_users_seen_same_movies_df = self.count_seen_same_movies(self.users_combinations_df, self.movies_seen_users_set_dict)
-        need_calculate_df = self.filter_need_calculate_df(self.users_combinations_df, self.MIN_SEEN_SAME_MOVIES_NUMBER)  # 需要计算相似度的用户列表
+        # 过滤出需要计算相似度的 DataFrame
+        need_calculate_df = self.filter_need_calculate_df(self.users_combinations_df, self.MIN_SEEN_SAME_MOVIES_NUMBER)
+        # 计算用户相似度
         users_cosine_similarity_df = self.calculate_users_cosine_similarity(self.users_combinations_df, self.users_movies_ndarray)
+        # 过滤出需要推荐的 DataFrame
         need_recommend_df = self.filter_need_recommend_df(self.users_combinations_df, self.MIN_COSINE_SIMILARITY)
+        # 生成推荐结果 dict
         recommend_result_dict = self.generate_recommend_result_dict(self.users_combinations_df, self.df, self.user_id_item, self.movie_id_item, self.rating_item, self.MIN_RECOMMEND_RATING)
+        # 将 dict 数据保存到json文件中
         self.save_dict_to_json(self.recommend_result_dict)
 
 
 if __name__ == '__main__':
-    give_csv_path = 'ratings_temp.csv'
-    give_user_id_item = 'userId'
-    give_movie_id_item = 'movieId'
-    give_rating_item = 'rating'
-    give_min_seen_same_movies_number = 20
-    give_min_cosine_similarity = 0.5
-    give_min_recommend_rating = 4.0
-    cosine_similarity_recommend = CosineSimilarityRecommend(give_csv_path, give_user_id_item, give_movie_id_item, give_rating_item, give_min_seen_same_movies_number, give_min_cosine_similarity, give_min_recommend_rating)
-    cosine_similarity_recommend.main()
-    print('='*16, 'end', '='*16)
-
-    # give_csv_path = 'test_csv.csv'
-    # give_user_id_item = 'userid'
-    # give_movie_id_item = 'goodsid'
-    # give_rating_item = 'score'
-    # give_min_seen_same_movies_number = 2
-    # give_min_cosine_similarity = 0.61
+    # give_csv_path = 'ratings_temp.csv'
+    # give_user_id_item = 'userId'
+    # give_movie_id_item = 'movieId'
+    # give_rating_item = 'rating'
+    # give_min_seen_same_movies_number = 20
+    # give_min_cosine_similarity = 0.5
     # give_min_recommend_rating = 4.0
     # cosine_similarity_recommend = CosineSimilarityRecommend(give_csv_path, give_user_id_item, give_movie_id_item, give_rating_item, give_min_seen_same_movies_number, give_min_cosine_similarity, give_min_recommend_rating)
     # cosine_similarity_recommend.main()
     # print('='*16, 'end', '='*16)
+
+    give_csv_path = 'test_csv.csv'
+    give_user_id_item = 'userid'
+    give_movie_id_item = 'goodsid'
+    give_rating_item = 'score'
+    give_min_seen_same_movies_number = 2
+    give_min_cosine_similarity = 0.61
+    give_min_recommend_rating = 4.0
+    cosine_similarity_recommend = CosineSimilarityRecommend(give_csv_path, give_user_id_item, give_movie_id_item, give_rating_item, give_min_seen_same_movies_number, give_min_cosine_similarity, give_min_recommend_rating)
+    cosine_similarity_recommend.main()
+    print('='*16, 'end', '='*16)
