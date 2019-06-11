@@ -204,7 +204,8 @@ class CosineSimilarityRecommend(object):
         """
         movies_seen_users_set_dict = {}
         for _movie in movies_set:  # 迭代出每一个电影id
-            temp_df = df[df[movie_id_item] == _movie]  # 取出看过 _movie 这部电影的所有行  # DataFrame 的布尔索引
+            # temp_df = df[df[movie_id_item] == _movie]  # 取出看过 _movie 这部电影的所有行  # DataFrame 的布尔索引
+            temp_df = df.loc[df.loc[:, movie_id_item] == _movie]  # 取出看过 _movie 这部电影的所有行  # DataFrame 的布尔索引
             users_set = set(temp_df.loc[:, user_id_item])  # 取出看过 _movie 这部电影的所有用户
             movies_seen_users_set_dict[_movie] = users_set  # 存入 dict
         self.movies_seen_users_set_dict = movies_seen_users_set_dict
