@@ -22,11 +22,11 @@ class CosineSimilarityRecommend(object):
 
         self.users_set = ''  # 用户集合
         self.movies_set = ''  # 电影集合
-        self.movies_users_ndarray = ''  # 电影_用户 矩阵，行为每部电影的索引，列为每个用户的索引（索引值从0开始）
+        self.users_movies_ndarray = ''  # 用户_电影 矩阵，行为每个用户的索引，列为每部电影的索引（索引值从0开始）
 
         self.users_combinations_df = ''  # 用户两两组合的DataFrame
 
-        self.movies_seen_users_set_dict = ''  # 每部电影的用户集合
+        self.movies_seen_users_set_dict = ''  # 每部电影的用户集合的字典
         '''
         {
             movie_id_0: {user_id_0, user_id_1},  # key_type:int  value_type:int
@@ -146,13 +146,13 @@ class CosineSimilarityRecommend(object):
         new_v2 = np.array(new_v2_list)
         return new_v1, new_v2
 
-    def calculate_users_cosine_similarity(self, need_calculate_df, movies_users_ndarray):
+    def calculate_users_cosine_similarity(self, need_calculate_df, users_movies_ndarray):
         cos_sim_list = []
         for _row in need_calculate_df.itertuples():
             user1_index = getattr(_row, 'user1') - 1  # 要 -1 ，因为矩阵的索引是从0开始的
             user2_index = getattr(_row, 'user2') - 1  # 要 -1 ，因为矩阵的索引是从0开始的
-            user1_vector = movies_users_ndarray[user1_index]  # 取行
-            user2_vector = movies_users_ndarray[user2_index]
+            user1_vector = users_movies_ndarray[user1_index]  # 取行
+            user2_vector = users_movies_ndarray[user2_index]
             user1_vector, user2_vector = self.vectors_dimensionality_reduction(user1_vector, user2_vector)
             cos_sim = self.calculate_vectors_cosine_similarity(user1_vector, user2_vector)  # 传入列向量
             cos_sim_list.append(cos_sim)
@@ -190,40 +190,58 @@ class CosineSimilarityRecommend(object):
         return self.users_combinations_df
 
     def generate_movies_seen_users_set_dict(self, movies_set, df, user_id_item, movie_id_item):
+        """
+        生成每部电影的用户集合的字典
+        {
+            movie_id_0: {user_id_0, user_id_1},  # key_type:int  value_type:int
+            movie_id_1: {user_id_0, user_id_4},
+        }
+        :param movies_set:
+        :param df:
+        :param user_id_item:
+        :param movie_id_item:
+        :return:
+        """
         movies_seen_users_set_dict = {}
-        for _movie in movies_set:
-            temp_df = df[df[movie_id_item] == _movie]  # 取出看过 _movie 这部电影的所有行
+        for _movie in movies_set:  # 迭代出每一个电影id
+            temp_df = df[df[movie_id_item] == _movie]  # 取出看过 _movie 这部电影的所有行  # DataFrame 的布尔索引
             users_set = set(temp_df.loc[:, user_id_item])  # 取出看过 _movie 这部电影的所有用户
             movies_seen_users_set_dict[_movie] = users_set  # 存入 dict
         self.movies_seen_users_set_dict = movies_seen_users_set_dict
         return self.movies_seen_users_set_dict
 
     def generate_users_combinations_df(self, users_set):
+        """
+        生成所有用户的两两组合的 DataFrame
+        :param users_set:
+        :return:
+        """
         users_combinations = itertools.combinations(list(users_set), 2)  # 组合
         self.users_combinations_df = pd.DataFrame(data=list(users_combinations), columns=['user1', 'user2'])  # 所有用户的两两组合
         return self.users_combinations_df
 
-    def generate_movies_users_ndarray(self, df, user_id_item, movie_id_item, rating_item):
-        '''
-        生成 电影_用户 矩阵，行为每部电影的索引，列为每个用户的索引（索引值从0开始）
+    def generate_users_movies_ndarray(self, df, user_id_item, movie_id_item, rating_item):
+        """
+        生成 用户_电影 矩阵，行为每个用户的索引，列为每部电影的索引（索引值从0开始）
         矩阵中的值为该用户对该电影的评分
         :param df:
         :param user_id_item:
         :param movie_id_item:
         :param rating_item:
         :return:
-        '''
+        """
+        # self.users_set = set(df.loc[:, user_id_item].drop_duplicates())
         self.users_set = set(df.loc[:, user_id_item])
         self.movies_set = set(df.loc[:, movie_id_item])
-        self.movies_users_ndarray = np.zeros((max(self.users_set), max(self.movies_set)))
+        self.users_movies_ndarray = np.zeros((max(self.users_set), max(self.movies_set)))
         for _row in df.itertuples():
             # print(getattr(row, 'userId'), getattr(row, 'movieId'), getattr(row, 'rating'))
-            # print(row.userId)
+            # print(_row.userId)
             user_index = getattr(_row, user_id_item) - 1  # 要 -1 ，因为矩阵的索引是从0开始的
             movie_index = getattr(_row, movie_id_item) - 1
             rating = getattr(_row, rating_item)
-            self.movies_users_ndarray[user_index, movie_index] = rating
-        return self.users_set, self.movies_set, self.movies_users_ndarray
+            self.users_movies_ndarray[user_index, movie_index] = rating
+        return self.users_set, self.movies_set, self.users_movies_ndarray
 
     def read_csv_to_df(self, csv_path):
         self.df = pd.read_csv(csv_path)  # 读csv
@@ -231,12 +249,12 @@ class CosineSimilarityRecommend(object):
 
     def main(self):
         df = self.read_csv_to_df(self.csv_path)  # 读 csv
-        users_set, movies_set, movies_users_ndarray = self.generate_movies_users_ndarray(self.df, self.user_id_item, self.movie_id_item, self.rating_item)  # 生成 电影_用户 矩阵
+        users_set, movies_set, users_movies_ndarray = self.generate_users_movies_ndarray(self.df, self.user_id_item, self.movie_id_item, self.rating_item)  # 生成 用户_电影 矩阵
         users_combinations_df = self.generate_users_combinations_df(self.users_set)
         movies_seen_users_set_dict = self.generate_movies_seen_users_set_dict(self.movies_set, self.df, self.user_id_item, self.movie_id_item)
         two_users_seen_same_movies_df = self.count_seen_same_movies(self.users_combinations_df, self.movies_seen_users_set_dict)
         need_calculate_df = self.filter_need_calculate_df(self.users_combinations_df, self.MIN_SEEN_SAME_MOVIES_NUMBER)  # 需要计算相似度的用户列表
-        users_cosine_similarity_df = self.calculate_users_cosine_similarity(self.users_combinations_df, self.movies_users_ndarray)
+        users_cosine_similarity_df = self.calculate_users_cosine_similarity(self.users_combinations_df, self.users_movies_ndarray)
         need_recommend_df = self.filter_need_recommend_df(self.users_combinations_df, self.MIN_COSINE_SIMILARITY)
         recommend_result_dict = self.generate_recommend_result_dict(self.users_combinations_df, self.df, self.user_id_item, self.movie_id_item, self.rating_item, self.MIN_RECOMMEND_RATING)
         self.save_dict_to_json(self.recommend_result_dict)
