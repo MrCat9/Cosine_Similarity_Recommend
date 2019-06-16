@@ -334,24 +334,24 @@ class CosineSimilarityRecommend(object):
 
 
 if __name__ == '__main__':
-    # give_csv_path = 'ratings_temp.csv'
-    # give_user_id_item = 'userId'
-    # give_movie_id_item = 'movieId'
-    # give_rating_item = 'rating'
-    # give_min_seen_same_movies_number = 20
-    # give_min_cosine_similarity = 0.5
-    # give_min_recommend_rating = 4.0
-    # cosine_similarity_recommend = CosineSimilarityRecommend(give_csv_path, give_user_id_item, give_movie_id_item, give_rating_item, give_min_seen_same_movies_number, give_min_cosine_similarity, give_min_recommend_rating)
-    # cosine_similarity_recommend.main()
-    # print('='*16, 'end', '='*16)
-
-    give_csv_path = 'test_csv.csv'
-    give_user_id_item = 'userid'
-    give_movie_id_item = 'goodsid'
-    give_rating_item = 'score'
-    give_min_seen_same_movies_number = 2
-    give_min_cosine_similarity = 0.61
+    give_csv_path = 'ratings_temp.csv'
+    give_user_id_item = 'userId'
+    give_movie_id_item = 'movieId'
+    give_rating_item = 'rating'
+    give_min_seen_same_movies_number = 20
+    give_min_cosine_similarity = 0.5
     give_min_recommend_rating = 4.0
     cosine_similarity_recommend = CosineSimilarityRecommend(give_csv_path, give_user_id_item, give_movie_id_item, give_rating_item, give_min_seen_same_movies_number, give_min_cosine_similarity, give_min_recommend_rating)
     cosine_similarity_recommend.main()
     print('='*16, 'end', '='*16)
+
+    # give_csv_path = 'test_csv.csv'
+    # give_user_id_item = 'userid'
+    # give_movie_id_item = 'goodsid'
+    # give_rating_item = 'score'
+    # give_min_seen_same_movies_number = 2
+    # give_min_cosine_similarity = 0.61
+    # give_min_recommend_rating = 4.0
+    # cosine_similarity_recommend = CosineSimilarityRecommend(give_csv_path, give_user_id_item, give_movie_id_item, give_rating_item, give_min_seen_same_movies_number, give_min_cosine_similarity, give_min_recommend_rating)
+    # cosine_similarity_recommend.main()
+    # print('='*16, 'end', '='*16)
