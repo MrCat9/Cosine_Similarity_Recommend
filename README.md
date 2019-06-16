@@ -11,4 +11,4 @@
 如：ratings.csv  （该数据集来自 https://grouplens.org/datasets/movielens/）
 
 ## 输出
-输出推荐结果（一个json文件，key为用户id，value为电影（或商品））
+输出推荐结果（一个json文件，key为用户id，value为向该用户推荐的电影（或商品）id）
