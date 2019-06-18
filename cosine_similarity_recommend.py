@@ -65,9 +65,18 @@ class CosineSimilarityRecommend(object):
     #     pass
 
     def generate_users_seen_movies_set_dict(self, users_set, df, user_id_item, movie_id_item):
+        """
+        生成每个需要推荐的用户看过的电影集合
+        :param users_set:
+        :param df:
+        :param user_id_item:
+        :param movie_id_item:
+        :return:
+        """
         users_seen_movies_set_dict = {}
         for _user in users_set:
-            temp_df = df[df[user_id_item] == _user]  # 取出 用户_user 的所有行
+            # temp_df = df[df[user_id_item] == _user]  # 取出 用户_user 的所有行
+            temp_df = df.loc[df.loc[:, user_id_item] == _user]  # 取出 用户_user 的所有行
             movies_set = set(temp_df.loc[:, movie_id_item])  # 取出 用户_user 看过的所有电影
             users_seen_movies_set_dict[_user] = movies_set  # 存入 dict
         self.need_recommend_users_seen_movies_set_dict = users_seen_movies_set_dict
@@ -81,16 +90,19 @@ class CosineSimilarityRecommend(object):
             user_id_1: "movie_id_1",
             user_id_2: "movie_id_0, movie_id_1, movie_id_2"
         }
-        :param need_recommend_df: 
-        :param df: 
-        :param user_id_item: 
-        :param movie_id_item: 
-        :param rating_item: 
-        :param min_recommend_rating: 
-        :return: 
+        :param need_recommend_df:
+        :param df:
+        :param user_id_item:
+        :param movie_id_item:
+        :param rating_item:
+        :param min_recommend_rating:
+        :return:
         """
-        users_set = set()  # 需要推荐的用户集合
-        users_df = need_recommend_df.loc[:, ['user1', 'user2']].applymap(lambda x: users_set.add(x))
+        # users_set = set()  # 需要推荐的用户集合
+        # users_df = need_recommend_df.loc[:, ['user1', 'user2']].applymap(lambda x: users_set.add(x))
+        user1_set = set(need_recommend_df.loc[:, 'user1'])
+        user2_set = set(need_recommend_df.loc[:, 'user2'])
+        users_set = user1_set.union(user2_set)  # 并集
         need_recommend_users_seen_movies_set_dict = self.generate_users_seen_movies_set_dict(users_set, df, user_id_item, movie_id_item)
 
         # 推荐
@@ -154,13 +166,17 @@ class CosineSimilarityRecommend(object):
         """
         v1 = np.array(vector1).reshape(1, -1)
         v2 = np.array(vector2).reshape(1, -1)
-        cos_sim = cosine_similarity(X=v1, Y=v2)
-        # 两个向量计算余弦相似度时，计算结果是一个 1*1矩阵
-        if cos_sim.size == 1:
-            cos_sim = cos_sim[0, 0]
-        else:
-            cos_sim = 0.0
-        return cos_sim
+        try:
+            cos_sim = cosine_similarity(X=v1, Y=v2)
+            # 两个向量计算余弦相似度时，计算结果是一个 1*1矩阵
+            if cos_sim.size == 1:
+                cos_sim = cos_sim[0, 0]
+            else:
+                cos_sim = 0.0
+            return cos_sim
+        except Exception as e:  # 可能是两个空向量
+            print(str(e))
+            return 0.0
 
     @staticmethod
     def vectors_dimensionality_reduction(vector1, vector2):
@@ -294,6 +310,7 @@ class CosineSimilarityRecommend(object):
         :return:
         """
         # self.users_set = set(df.loc[:, user_id_item].drop_duplicates())
+        # self.users_set = set(df.drop_duplicates([user_id_item]).loc[:, user_id_item])  # drop_duplicates()  对列去重
         self.users_set = set(df.loc[:, user_id_item])
         self.movies_set = set(df.loc[:, movie_id_item])
         self.users_movies_ndarray = np.zeros((max(self.users_set), max(self.movies_set)))
