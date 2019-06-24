@@ -119,7 +119,8 @@ class CosineSimilarityRecommend(object):
             temp_set = user2_seen_movies_set.difference(user1_seen_movies_set)  # u2 - u1
             for _movie_id in temp_set:
                 # rating = df[(df[movie_id_item] == _movie_id) & (df[user_id_item] == user2_id)].loc[:, rating_item]
-                rating = df.loc[(df.loc[:, movie_id_item] == _movie_id) & (df.loc[:, user_id_item] == user2_id)].loc[:, rating_item]
+                # rating = df.loc[(df.loc[:, movie_id_item] == _movie_id) & (df.loc[:, user_id_item] == user2_id)].loc[:, rating_item]
+                rating = df.loc[(df.loc[:, movie_id_item] == _movie_id) & (df.loc[:, user_id_item] == user2_id), rating_item]
                 float_rating = rating.iat[0]
                 if float_rating >= min_recommend_rating:
                     recommend_for_users1_set.add(_movie_id)
@@ -132,7 +133,8 @@ class CosineSimilarityRecommend(object):
             temp_set = user1_seen_movies_set.difference(user2_seen_movies_set)
             for _movie_id in temp_set:
                 # rating = df[(df[movie_id_item] == _movie_id) & (df[user_id_item] == user1_id)].loc[:, rating_item]
-                rating = df.loc[(df.loc[:, movie_id_item] == _movie_id) & (df.loc[:, user_id_item] == user1_id)].loc[:, rating_item]
+                # rating = df.loc[(df.loc[:, movie_id_item] == _movie_id) & (df.loc[:, user_id_item] == user1_id)].loc[:, rating_item]
+                rating = df.loc[(df.loc[:, movie_id_item] == _movie_id) & (df.loc[:, user_id_item] == user1_id), rating_item]
                 float_rating = rating.iat[0]
                 if float_rating >= min_recommend_rating:
                     recommend_for_users2_set.add(_movie_id)
@@ -216,8 +218,10 @@ class CosineSimilarityRecommend(object):
             # user1_vector, user2_vector = self.vectors_dimensionality_reduction(user1_vector, user2_vector)  # 对向量降维
             user1_id = getattr(_row, 'user1')
             user2_id = getattr(_row, 'user2')
-            user1_df = df.loc[df.loc[:, user_id_item] == user1_id].loc[:, [movie_id_item, rating_item]]
-            user2_df = df.loc[df.loc[:, user_id_item] == user2_id].loc[:, [movie_id_item, rating_item]]
+            # user1_df = df.loc[df.loc[:, user_id_item] == user1_id].loc[:, [movie_id_item, rating_item]]
+            user1_df = df.loc[df.loc[:, user_id_item] == user1_id, [movie_id_item, rating_item]]
+            # user2_df = df.loc[df.loc[:, user_id_item] == user2_id].loc[:, [movie_id_item, rating_item]]
+            user2_df = df.loc[df.loc[:, user_id_item] == user2_id, [movie_id_item, rating_item]]
             user12_df = pd.merge(user1_df, user2_df, on=movie_id_item, how='outer').fillna(value=0)
             user1_vector = getattr(user12_df, rating_item+'_x')
             user2_vector = getattr(user12_df, rating_item+'_y')
