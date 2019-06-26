@@ -27,23 +27,19 @@ class CosineSimilarityRecommend(object):
         self.users_combinations_df = ''  # 用户两两组合的DataFrame
 
         self.movies_seen_users_set_dict = ''  # 每部电影的用户集合的字典
-        '''
-        {
-            movie_id_0: {user_id_0, user_id_1},  # key_type:int
-            movie_id_1: {user_id_0, user_id_4},  # value_type:set    {int, int, int}
-        }
-       '''
+        # {
+        #     movie_id_0: {user_id_0, user_id_1},  # key_type:int
+        #     movie_id_1: {user_id_0, user_id_4},  # value_type:set    {int, int, int}
+        # }
 
         self.need_recommend_users_seen_movies_set_dict = ''  # 每个需要推荐的用户看过的电影集合
 
         self.recommend_result_dict = ''  # 推荐结果
-        '''
-        {
-            user_id_0: "movie_id_0, movie_id_2",  # key_type:int  value_type:str
-            user_id_1: "movie_id_1",
-            user_id_2: "movie_id_0, movie_id_1, movie_id_2"
-        }
-        '''
+        # {
+        #     user_id_0: "movie_id_0, movie_id_2",  # key_type:int  value_type:str
+        #     user_id_1: "movie_id_1",
+        #     user_id_2: "movie_id_0, movie_id_1, movie_id_2"
+        # }
 
     @staticmethod
     def save_dict_to_json(dict_data, json_path='recommend_result.json'):
